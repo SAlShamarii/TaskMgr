@@ -1,0 +1,2269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        :root {
+            --bg-primary: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            --bg-secondary: rgba(255, 255, 255, 0.05);
+            --bg-tertiary: rgba(255, 255, 255, 0.03);
+            --text-primary: white;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-color: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --bg-secondary: rgba(0, 0, 0, 0.05);
+            --bg-tertiary: rgba(0, 0, 0, 0.03);
+            --text-primary: #1e293b;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --text-muted: rgba(0, 0, 0, 0.4);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --accent-color: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 24px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header h1 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-color);
+        }
+
+        .progress-dashboard {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            margin-bottom: 32px;
+            text-align: center;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .controls button:hover {
+            background: var(--accent-color);
+            border-color: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        .category-selector {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .category-btn {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+        }
+
+        .category-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        .category-btn:hover:not(.active) {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .search-filter-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .board-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            position: absolute;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .board.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+            position: relative;
+        }
+
+        .column {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .column:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px var(--shadow-color);
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .column-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .column-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .column-actions button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .task-count {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .drop-zone {
+            flex: 1;
+            border: 2px dashed transparent;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent-color);
+            background: var(--bg-tertiary);
+        }
+
+        /* UPDATED TASK STYLES FOR COLLAPSIBLE FUNCTIONALITY */
+        .task {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            cursor: grab;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .task.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .task:hover {
+            box-shadow: 0 8px 30px var(--shadow-color);
+            transform: translateY(-2px);
+            background: var(--accent-color);
+            border-color: var(--border-color);
+        }
+
+        .task.dragging {
+            opacity: 0.6;
+            transform: rotate(2deg) scale(0.95);
+            box-shadow: 0 15px 40px var(--shadow-color);
+            z-index: 1000;
+        }
+
+        .task.expanded {
+            padding: 20px;
+        }
+
+        /* Task Header - Always Visible */
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .task-content {
+            flex: 1;
+            line-height: 1.5;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .task-select {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Quick Actions - Always Visible */
+        .task-quick-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .expand-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .expand-toggle:hover {
+            background: var(--accent-color);
+            transform: scale(1.1);
+            color: var(--text-primary);
+        }
+
+        .expand-toggle.expanded {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .task-main-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .task:hover .task-main-actions {
+            opacity: 1;
+        }
+
+        .task-main-actions button {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .task-main-actions button:hover {
+            background: var(--accent-color);
+            border-color: var(--border-color);
+            transform: scale(1.1);
+            color: var(--text-primary);
+        }
+
+        /* Priority indicator - Always visible as colored left border */
+        .task.priority-urgent { border-left: 4px solid #ef4444; }
+        .task.priority-high { border-left: 4px solid #f97316; }
+        .task.priority-medium { border-left: 4px solid #eab308; }
+        .task.priority-low { border-left: 4px solid #22c55e; }
+
+        /* Collapsible Details Section */
+        .task-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            opacity: 0;
+        }
+
+        .task.expanded .task-details {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 16px;
+            transition: max-height 0.3s ease-in, opacity 0.2s ease-in;
+        }
+
+        .priority-selector {
+            display: flex;
+            gap: 4px;
+            margin: 12px 0;
+        }
+
+        .priority-btn {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .priority-btn.urgent { background: #ef4444; }
+        .priority-btn.high { background: #f97316; }
+        .priority-btn.medium { background: #eab308; }
+        .priority-btn.low { background: #22c55e; }
+
+        .priority-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        .task-tags {
+            display: flex;
+            gap: 4px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .add-tag-form {
+            display: flex;
+            gap: 4px;
+            margin: 8px 0;
+        }
+
+        .add-tag-input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: var(--text-primary);
+            font-size: 11px;
+        }
+
+        .dependencies {
+            margin: 12px 0;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .dependency-item {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dependency-item.blocked {
+            color: #ef4444;
+        }
+
+        .dependency-item.completed {
+            color: #22c55e;
+        }
+
+        .subtasks {
+            margin: 16px 0;
+        }
+
+        .subtask {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .subtask-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .subtask-checkbox.completed {
+            background: var(--accent-color);
+            border-color: var(--border-color);
+        }
+
+        .subtask-checkbox.completed::after {
+            content: '✓';
+            color: var(--text-primary);
+            font-size: 10px;
+        }
+
+        .subtask-text {
+            flex: 1;
+            color: var(--text-primary);
+        }
+
+        .subtask-text.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .subtask-delete {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .subtask:hover .subtask-delete {
+            opacity: 1;
+        }
+
+        .subtask-delete:hover {
+            color: #ef4444;
+        }
+
+        .add-subtask {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .add-subtask input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .add-subtask input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .add-subtask input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-subtask button {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .add-subtask button:hover {
+            background: var(--accent-color);
+        }
+
+        .comments {
+            margin-top: 16px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+        }
+
+        .comment {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .comment-meta {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .comment-delete {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .comment:hover .comment-delete {
+            opacity: 1;
+        }
+
+        .comment-delete:hover {
+            color: #ef4444;
+        }
+
+        .add-comment {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .add-comment input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .add-comment input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .add-comment input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-comment button {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .add-comment button:hover {
+            background: var(--accent-color);
+        }
+
+        .task-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 16px;
+        }
+
+        .time-tracker {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .ideas-bar {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            margin-top: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .ideas-bar:hover {
+            background: var(--accent-color);
+        }
+
+        .ideas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .ideas-title {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .ideas-count {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+        }
+
+        .add-idea-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .add-idea-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .add-idea-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: var(--bg-tertiary);
+        }
+
+        .add-idea-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-idea-btn {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-idea-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .ideas-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .idea-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .idea-item:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .idea-text {
+            flex: 1;
+        }
+
+        .idea-delete {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .idea-item:hover .idea-delete {
+            opacity: 1;
+        }
+
+        .idea-delete:hover {
+            color: #ef4444;
+        }
+
+        .bulk-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            display: none;
+            gap: 8px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 30px var(--shadow-color);
+        }
+
+        .bulk-actions.visible {
+            display: flex;
+        }
+
+        .bulk-actions button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .sort-indicator {
+            position: absolute;
+            left: -2px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent-color);
+            border-radius: 0 2px 2px 0;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .task.sort-target .sort-indicator {
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .board {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .column {
+                padding: 20px;
+            }
+
+            .category-selector {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .search-filter-bar {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .board {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            body {
+                padding: 16px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .column {
+                padding: 16px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .search-filter-bar {
+                flex-direction: column;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-color);
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="header">
+        <h1>Task Manager</h1>
+        <p>Advanced task management with productivity insights</p>
+        <button class="theme-toggle" onclick="toggleTheme()">Light Mode</button>
+    </div>
+
+    <div class="progress-dashboard" id="dashboard">
+        <div class="progress-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-tasks">0</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completed-tasks">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completion-rate">0%</div>
+                <div class="stat-label">Completion Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-time">0d</div>
+                <div class="stat-label">Avg. Completion Time</div>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="exportTasks()">Export Tasks</button>
+        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importTasks(event)">
+        <button onclick="document.getElementById('importFile').click()">Import Tasks</button>
+        <button onclick="clearAllTasks()">Clear All</button>
+        <button onclick="toggleArchived()">Show Archived</button>
+        <button onclick="addCustomColumn()">Add Column</button>
+    </div>
+
+    <div class="category-selector">
+        <button class="category-btn active" onclick="switchCategory('personal')">Personal</button>
+        <button class="category-btn" onclick="switchCategory('work')">Work</button>
+    </div>
+
+    <div class="search-filter-bar">
+        <input type="text" class="search-input" placeholder="Search tasks..." id="search-input" oninput="filterTasks()">
+        <select class="filter-select" id="priority-filter" onchange="filterTasks()">
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+        </select>
+        <select class="filter-select" id="tag-filter" onchange="filterTasks()">
+            <option value="">All Tags</option>
+        </select>
+    </div>
+
+    <div class="board-container">
+        <!-- Personal Board -->
+        <div class="board active" id="personal-board" data-category="personal">
+            <!-- Dynamic columns will be inserted here -->
+        </div>
+
+        <!-- Work Board -->
+        <div class="board" id="work-board" data-category="work">
+            <!-- Dynamic columns will be inserted here -->
+        </div>
+
+        <!-- Ideas Bar -->
+        <div class="ideas-bar">
+            <div class="ideas-header">
+                <h3 class="ideas-title">Ideas Backlog</h3>
+                <span class="ideas-count" id="ideas-count">0</span>
+            </div>
+            <div class="add-idea-form">
+                <input type="text" class="add-idea-input" placeholder="Jot down a quick idea..." id="idea-input">
+                <button class="add-idea-btn" onclick="addIdea()">Add Idea</button>
+            </div>
+            <div class="ideas-list" id="ideas-list"></div>
+        </div>
+    </div>
+
+    <div class="bulk-actions" id="bulk-actions">
+        <button onclick="bulkDelete()">Delete Selected</button>
+        <button onclick="bulkMove('done')">Move to Done</button>
+        <button onclick="bulkSetPriority('high')">Set High Priority</button>
+        <button onclick="bulkArchive()">Archive Selected</button>
+        <button onclick="clearSelection()">Clear Selection</button>
+    </div>
+
+    <script>
+        const STORAGE_KEYS = {
+            tasks: 'taskmgr-tasks',
+            ideas: 'taskmgr-ideas',
+            columns: 'taskmgr-columns',
+            taskCounter: 'taskmgr-task-counter',
+            ideaCounter: 'taskmgr-idea-counter'
+        };
+
+        const LEGACY_KEYS = {
+            tasks: 'sara-tasks',
+            ideas: 'sara-ideas',
+            columns: 'sara-columns',
+            taskCounter: 'sara-task-counter',
+            ideaCounter: 'sara-idea-counter'
+        };
+
+        function migrateLegacyStorage() {
+            Object.keys(STORAGE_KEYS).forEach(key => {
+                const newKey = STORAGE_KEYS[key];
+                const oldKey = LEGACY_KEYS[key];
+                if (!oldKey) return;
+
+                if (localStorage.getItem(newKey) === null) {
+                    const legacyValue = localStorage.getItem(oldKey);
+                    if (legacyValue !== null) {
+                        localStorage.setItem(newKey, legacyValue);
+                    }
+                }
+
+                localStorage.removeItem(oldKey);
+            });
+        }
+
+        migrateLegacyStorage();
+
+        // Global storage
+        let tasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.tasks)) || {};
+        let ideas = JSON.parse(localStorage.getItem(STORAGE_KEYS.ideas)) || {};
+        let columns = JSON.parse(localStorage.getItem(STORAGE_KEYS.columns)) || {
+            personal: ['on-the-table', 'in-progress', 'waiting', 'done'],
+            work: ['on-the-table', 'in-progress', 'waiting', 'done']
+        };
+        let taskIdCounter = parseInt(localStorage.getItem(STORAGE_KEYS.taskCounter)) || 1;
+        let ideaIdCounter = parseInt(localStorage.getItem(STORAGE_KEYS.ideaCounter)) || 1;
+        let currentCategory = 'personal';
+        let selectedTasks = new Set();
+        let showArchived = false;
+        let searchQuery = '';
+        let priorityFilter = '';
+        let tagFilter = '';
+        let expandedTasks = new Set(); // Track which tasks are expanded
+        
+        // Drag and drop variables
+        let draggedElement = null;
+        let draggedOverElement = null;
+        let sortMode = false;
+        let draggedType = null;
+
+        // Column names mapping
+        const columnNames = {
+            'on-the-table': 'On the Table',
+            'in-progress': 'In Progress', 
+            'waiting': 'Waiting for Review',
+            'done': 'Done'
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            renderColumns();
+            renderAllTasks();
+            renderIdeas();
+            updateDashboard();
+            updateTagFilter();
+            setupEventListeners();
+        });
+
+        // NEW FUNCTION: Toggle task expansion
+        function toggleTaskExpansion(taskId) {
+            const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+            const expandToggle = taskElement.querySelector('.expand-toggle');
+            
+            if (expandedTasks.has(taskId)) {
+                // Collapse the task
+                expandedTasks.delete(taskId);
+                taskElement.classList.remove('expanded');
+                expandToggle.textContent = '⚙';
+                expandToggle.classList.remove('expanded');
+            } else {
+                // Expand the task
+                expandedTasks.add(taskId);
+                taskElement.classList.add('expanded');
+                expandToggle.textContent = '✕';
+                expandToggle.classList.add('expanded');
+            }
+        }
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+            
+            body.setAttribute('data-theme', savedTheme);
+            themeToggle.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        }
+
+        // Column management
+        function renderColumns() {
+            const personalBoard = document.getElementById('personal-board');
+            const workBoard = document.getElementById('work-board');
+            
+            personalBoard.innerHTML = '';
+            workBoard.innerHTML = '';
+            
+            columns.personal.forEach(columnId => renderColumn(personalBoard, columnId, 'personal'));
+            columns.work.forEach(columnId => renderColumn(workBoard, columnId, 'work'));
+        }
+
+        function renderColumn(board, columnId, category) {
+            const columnElement = document.createElement('div');
+            columnElement.className = `column ${columnId}`;
+            
+            const columnName = columnNames[columnId] || columnId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            columnElement.innerHTML = `
+                <div class="column-header">
+                    <h2 class="column-title">${columnName}</h2>
+                    <div class="column-actions">
+                        ${columnId !== 'done' ? `<button onclick="removeColumn('${columnId}', '${category}')">Remove</button>` : ''}
+                        <span class="task-count" data-column="${columnId}" data-category="${category}">0</span>
+                    </div>
+                </div>
+                <div class="drop-zone" data-column="${columnId}" data-category="${category}"></div>
+            `;
+            
+            board.appendChild(columnElement);
+        }
+
+        function addCustomColumn() {
+            const columnName = prompt('Enter column name:');
+            if (!columnName) return;
+            
+            const columnId = columnName.toLowerCase().replace(/\s+/g, '-');
+            const insertIndex = columns[currentCategory].length - 1; // Insert before 'done'
+            
+            columns[currentCategory].splice(insertIndex, 0, columnId);
+            columnNames[columnId] = columnName;
+            
+            saveToStorage();
+            renderColumns();
+            renderAllTasks();
+        }
+
+        function removeColumn(columnId, category) {
+            if (columnId === 'done') return; // Can't remove done column
+            
+            const tasksInColumn = Object.values(tasks).filter(t => t.column === columnId && t.category === category);
+            if (tasksInColumn.length > 0) {
+                const moveTo = prompt('Column has tasks. Move them to which column?', 'on-the-table');
+                if (moveTo && columns[category].includes(moveTo)) {
+                    tasksInColumn.forEach(task => {
+                        task.column = moveTo;
+                        task.updatedAt = new Date().toISOString();
+                    });
+                }
+            }
+            
+            columns[category] = columns[category].filter(col => col !== columnId);
+            saveToStorage();
+            renderColumns();
+            renderAllTasks();
+        }
+
+        // Category switching
+        function switchCategory(category) {
+            if (currentCategory === category) return;
+            
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            const currentBoard = document.querySelector('.board.active');
+            if (currentBoard) {
+                currentBoard.classList.remove('active');
+            }
+            
+            setTimeout(() => {
+                document.getElementById(`${category}-board`).classList.add('active');
+                renderIdeas();
+                updateDashboard();
+                updateTagFilter();
+            }, 200);
+        }
+
+        // Task management functions
+        function addIdea() {
+            const input = document.getElementById('idea-input');
+            const content = input.value.trim();
+            
+            if (!content) return;
+            
+            const ideaId = `idea-${ideaIdCounter++}`;
+            const idea = {
+                id: ideaId,
+                content: content,
+                category: currentCategory,
+                createdAt: new Date().toISOString()
+            };
+            
+            ideas[ideaId] = idea;
+            input.value = '';
+            
+            saveToStorage();
+            renderIdeas();
+        }
+
+        function addSubtask(taskId, subtaskInput) {
+            const content = subtaskInput.value.trim();
+            if (!content) return;
+            
+            const subtask = {
+                id: `subtask-${Date.now()}`,
+                content: content,
+                completed: false
+            };
+            
+            if (!tasks[taskId].subtasks) tasks[taskId].subtasks = [];
+            tasks[taskId].subtasks.push(subtask);
+            tasks[taskId].updatedAt = new Date().toISOString();
+            subtaskInput.value = '';
+            
+            saveToStorage();
+            renderAllTasks();
+            updateDashboard();
+        }
+
+        function toggleSubtask(taskId, subtaskId) {
+            const task = tasks[taskId];
+            const subtask = task.subtasks.find(st => st.id === subtaskId);
+            if (subtask) {
+                subtask.completed = !subtask.completed;
+                task.updatedAt = new Date().toISOString();
+                saveToStorage();
+                renderAllTasks();
+                updateDashboard();
+            }
+        }
+
+        function deleteSubtask(taskId, subtaskId) {
+            const task = tasks[taskId];
+            task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
+            task.updatedAt = new Date().toISOString();
+            saveToStorage();
+            renderAllTasks();
+        }
+
+        function addComment(taskId, commentInput) {
+            const content = commentInput.value.trim();
+            if (!content) return;
+            
+            const comment = {
+                id: `comment-${Date.now()}`,
+                content: content,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (!tasks[taskId].comments) tasks[taskId].comments = [];
+            tasks[taskId].comments.push(comment);
+            tasks[taskId].updatedAt = new Date().toISOString();
+            commentInput.value = '';
+            
+            saveToStorage();
+            renderAllTasks();
+        }
+
+        function deleteComment(taskId, commentId) {
+            const task = tasks[taskId];
+            if (task.comments) {
+                task.comments = task.comments.filter(c => c.id !== commentId);
+                task.updatedAt = new Date().toISOString();
+                saveToStorage();
+                renderAllTasks();
+            }
+        }
+
+        function addTag(taskId, tagInput) {
+            const content = tagInput.value.trim();
+            if (!content) return;
+            
+            if (!tasks[taskId].tags) tasks[taskId].tags = [];
+            if (!tasks[taskId].tags.includes(content)) {
+                tasks[taskId].tags.push(content);
+                tasks[taskId].updatedAt = new Date().toISOString();
+                tagInput.value = '';
+                saveToStorage();
+                renderAllTasks();
+                updateTagFilter();
+            }
+        }
+
+        function removeTag(taskId, tag) {
+            if (!tasks[taskId].tags) return;
+            tasks[taskId].tags = tasks[taskId].tags.filter(t => t !== tag);
+            tasks[taskId].updatedAt = new Date().toISOString();
+            saveToStorage();
+            renderAllTasks();
+            updateTagFilter();
+        }
+
+        function addDependency(taskId) {
+            const availableTasks = Object.values(tasks)
+                .filter(t => t.id !== taskId && t.category === tasks[taskId].category && !t.archived)
+                .map(t => `${t.id}: ${t.content.substring(0, 50)}`)
+                .join('\n');
+            
+            if (!availableTasks) {
+                alert('No other tasks available for dependencies in this category.');
+                return;
+            }
+            
+            const dependencyId = prompt(`Select task dependency:\n${availableTasks}\n\nEnter task ID:`);
+            if (dependencyId && tasks[dependencyId]) {
+                if (!tasks[taskId].dependencies) tasks[taskId].dependencies = [];
+                if (!tasks[taskId].dependencies.includes(dependencyId)) {
+                    tasks[taskId].dependencies.push(dependencyId);
+                    tasks[taskId].updatedAt = new Date().toISOString();
+                    saveToStorage();
+                    renderAllTasks();
+                }
+            }
+        }
+
+        function deleteDependency(taskId, dependencyId) {
+            if (!tasks[taskId].dependencies) return;
+            tasks[taskId].dependencies = tasks[taskId].dependencies.filter(d => d !== dependencyId);
+            tasks[taskId].updatedAt = new Date().toISOString();
+            saveToStorage();
+            renderAllTasks();
+        }
+
+        function deleteIdea(ideaId) {
+            delete ideas[ideaId];
+            saveToStorage();
+            renderIdeas();
+        }
+
+        function setPriority(taskId, priority) {
+            tasks[taskId].priority = priority;
+            tasks[taskId].updatedAt = new Date().toISOString();
+            saveToStorage();
+            renderAllTasks();
+        }
+
+        function getNextOrderInColumn(column, category) {
+            const columnTasks = Object.values(tasks).filter(t => 
+                t.column === column && t.category === category && !t.archived
+            );
+            return columnTasks.length > 0 ? Math.max(...columnTasks.map(t => t.order || 0)) + 1 : 0;
+        }
+
+        function calculateTimeInColumn(task) {
+            if (!task.columnHistory || task.columnHistory.length === 0) return '0d';
+            const now = new Date();
+            const lastMove = new Date(task.columnHistory[task.columnHistory.length - 1]?.timestamp || task.createdAt);
+            const days = Math.ceil((now - lastMove) / (1000 * 60 * 60 * 24));
+            return `${days}d`;
+        }
+
+        function filterTasks() {
+            searchQuery = document.getElementById('search-input').value.toLowerCase();
+            priorityFilter = document.getElementById('priority-filter').value;
+            tagFilter = document.getElementById('tag-filter').value;
+            renderAllTasks();
+        }
+
+        function taskMatchesFilters(task) {
+            if (!!task.archived !== showArchived) return false;
+            
+            if (searchQuery && !task.content.toLowerCase().includes(searchQuery)) {
+                const hasMatchingSubtask = task.subtasks?.some(st => 
+                    st.content.toLowerCase().includes(searchQuery)
+                );
+                const hasMatchingComment = task.comments?.some(c => 
+                    c.content.toLowerCase().includes(searchQuery)
+                );
+                if (!hasMatchingSubtask && !hasMatchingComment) return false;
+            }
+            
+            if (priorityFilter && task.priority !== priorityFilter) return false;
+            if (tagFilter && (!task.tags || !task.tags.includes(tagFilter))) return false;
+            
+            return true;
+        }
+
+        function renderAllTasks() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = '';
+            });
+            
+            const tasksByCategory = {};
+            Object.values(tasks).forEach(task => {
+                if (!taskMatchesFilters(task)) return;
+                
+                if (!tasksByCategory[task.category]) {
+                    tasksByCategory[task.category] = {};
+                }
+                if (!tasksByCategory[task.category][task.column]) {
+                    tasksByCategory[task.category][task.column] = [];
+                }
+                tasksByCategory[task.category][task.column].push(task);
+            });
+            
+            Object.keys(tasksByCategory).forEach(category => {
+                Object.keys(tasksByCategory[category]).forEach(column => {
+                    tasksByCategory[category][column].sort((a, b) => (a.order || 0) - (b.order || 0));
+                });
+            });
+            
+            Object.keys(tasksByCategory).forEach(category => {
+                Object.keys(tasksByCategory[category]).forEach(column => {
+                    tasksByCategory[category][column].forEach(task => {
+                        renderTask(task);
+                    });
+                });
+            });
+            
+            updateTaskCounts();
+        }
+
+        // UPDATED RENDER TASK FUNCTION FOR COLLAPSIBLE DETAILS
+        function renderTask(task) {
+            const taskElement = document.createElement('div');
+            taskElement.className = `task priority-${task.priority || 'medium'}`;
+            if (selectedTasks.has(task.id)) taskElement.classList.add('selected');
+            if (expandedTasks.has(task.id)) taskElement.classList.add('expanded');
+            taskElement.draggable = true;
+            taskElement.dataset.taskId = task.id;
+            taskElement.dataset.category = task.category;
+            taskElement.dataset.column = task.column;
+            
+            const createdDate = new Date(task.createdAt).toLocaleDateString();
+            const timeInColumn = calculateTimeInColumn(task);
+            
+            // Build dependencies HTML
+            let dependenciesHtml = '';
+            if (task.dependencies && task.dependencies.length > 0) {
+                dependenciesHtml = `<div class="dependencies">
+                    <strong>Dependencies:</strong>
+                    ${task.dependencies.map(depId => {
+                        const depTask = tasks[depId];
+                        if (!depTask) return '';
+                        const isBlocked = depTask.column !== 'done';
+                        return `<div class="dependency-item ${isBlocked ? 'blocked' : 'completed'}">
+                            ${depTask.content.substring(0, 30)}... ${isBlocked ? '(Blocking)' : '(Done)'}
+                            <button onclick="deleteDependency('${task.id}', '${depId}')">×</button>
+                        </div>`;
+                    }).join('')}
+                    <button onclick="addDependency('${task.id}')">+ Add Dependency</button>
+                </div>`;
+            } else {
+                dependenciesHtml = `<button onclick="addDependency('${task.id}')" style="font-size: 11px; padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-secondary); cursor: pointer;">+ Add Dependency</button>`;
+            }
+            
+            // Build priority selector HTML
+            const prioritySelector = `
+                <div class="priority-selector">
+                    <div class="priority-btn urgent ${task.priority === 'urgent' ? 'active' : ''}" onclick="setPriority('${task.id}', 'urgent')" title="Urgent"></div>
+                    <div class="priority-btn high ${task.priority === 'high' ? 'active' : ''}" onclick="setPriority('${task.id}', 'high')" title="High"></div>
+                    <div class="priority-btn medium ${task.priority === 'medium' ? 'active' : ''}" onclick="setPriority('${task.id}', 'medium')" title="Medium"></div>
+                    <div class="priority-btn low ${task.priority === 'low' ? 'active' : ''}" onclick="setPriority('${task.id}', 'low')" title="Low"></div>
+                </div>
+            `;
+            
+            // Build tags HTML
+            let tagsHtml = '';
+            if (task.tags && task.tags.length > 0) {
+                tagsHtml = `<div class="task-tags">
+                    ${task.tags.map(tag => `<span class="tag" onclick="removeTag('${task.id}', '${tag}')" title="Click to remove">${tag} ×</span>`).join('')}
+                </div>`;
+            }
+            tagsHtml += `<div class="add-tag-form">
+                <input type="text" class="add-tag-input" placeholder="Add tag..." onkeypress="if(event.key==='Enter') addTag('${task.id}', this)">
+            </div>`;
+            
+            // Build subtasks HTML
+            let subtasksHtml = '';
+            if (task.subtasks && task.subtasks.length > 0) {
+                subtasksHtml = `<div class="subtasks">`;
+                task.subtasks.forEach(subtask => {
+                    subtasksHtml += `
+                        <div class="subtask">
+                            <div class="subtask-checkbox ${subtask.completed ? 'completed' : ''}" 
+                                 onclick="toggleSubtask('${task.id}', '${subtask.id}')"></div>
+                            <span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.content)}</span>
+                            <button class="subtask-delete" onclick="deleteSubtask('${task.id}', '${subtask.id}')" title="Delete">×</button>
+                        </div>
+                    `;
+                });
+                subtasksHtml += `
+                    <div class="add-subtask">
+                        <input type="text" placeholder="Add subtask..." onkeypress="if(event.key==='Enter') addSubtask('${task.id}', this)">
+                        <button onclick="addSubtask('${task.id}', this.previousElementSibling)">Add</button>
+                    </div>
+                </div>`;
+            } else {
+                subtasksHtml = `
+                    <div class="subtasks">
+                        <div class="add-subtask">
+                            <input type="text" placeholder="Add subtask..." onkeypress="if(event.key==='Enter') addSubtask('${task.id}', this)">
+                            <button onclick="addSubtask('${task.id}', this.previousElementSibling)">Add</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Build comments HTML
+            let commentsHtml = '';
+            if (task.comments && task.comments.length > 0) {
+                commentsHtml = `<div class="comments">`;
+                task.comments.forEach(comment => {
+                    const commentDate = new Date(comment.createdAt).toLocaleDateString();
+                    commentsHtml += `
+                        <div class="comment">
+                            <div class="comment-meta">${commentDate}</div>
+                            <div>${escapeHtml(comment.content)}</div>
+                            <button class="comment-delete" onclick="deleteComment('${task.id}', '${comment.id}')" title="Delete">×</button>
+                        </div>
+                    `;
+                });
+                commentsHtml += `
+                    <div class="add-comment">
+                        <input type="text" placeholder="Add comment..." onkeypress="if(event.key==='Enter') addComment('${task.id}', this)">
+                        <button onclick="addComment('${task.id}', this.previousElementSibling)">Add</button>
+                    </div>
+                </div>`;
+            } else {
+                commentsHtml = `
+                    <div class="comments">
+                        <div class="add-comment">
+                            <input type="text" placeholder="Add comment..." onkeypress="if(event.key==='Enter') addComment('${task.id}', this)">
+                            <button onclick="addComment('${task.id}', this.previousElementSibling)">Add</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Task HTML with collapsible structure
+            taskElement.innerHTML = `
+                <div class="sort-indicator"></div>
+                <input type="checkbox" class="task-select" onchange="toggleTaskSelection('${task.id}')">
+                <div class="task-header">
+                    <div class="task-content" onclick="editTask('${task.id}')">${escapeHtml(task.content)}</div>
+                    <div class="task-quick-actions">
+                        <button class="expand-toggle ${expandedTasks.has(task.id) ? 'expanded' : ''}" 
+                                onclick="toggleTaskExpansion('${task.id}')" 
+                                title="Configure task">
+                            ${expandedTasks.has(task.id) ? '✕' : '⚙'}
+                        </button>
+                        <div class="task-main-actions">
+                            <button onclick="archiveTask('${task.id}')" title="${task.archived ? 'Unarchive' : 'Archive'}">${task.archived ? '📤' : '📦'}</button>
+                            <button onclick="deleteTask('${task.id}')" title="Delete">×</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-details">
+                    ${dependenciesHtml}
+                    ${prioritySelector}
+                    ${tagsHtml}
+                    ${subtasksHtml}
+                    ${commentsHtml}
+                    <div class="task-meta">
+                        <span>Created: ${createdDate}</span>
+                        <div class="time-tracker">Time in column: ${timeInColumn}</div>
+                    </div>
+                </div>
+            `;
+            
+            const dropZone = document.querySelector(`[data-column="${task.column}"][data-category="${task.category}"].drop-zone`);
+            if (dropZone) {
+                dropZone.appendChild(taskElement);
+            }
+        }
+
+        function renderIdeas() {
+            const ideasList = document.getElementById('ideas-list');
+            const ideasCount = document.getElementById('ideas-count');
+            
+            ideasList.innerHTML = '';
+            
+            const categoryIdeas = Object.values(ideas).filter(idea => idea.category === currentCategory);
+            ideasCount.textContent = categoryIdeas.length;
+            
+            categoryIdeas.forEach(idea => {
+                const ideaElement = document.createElement('div');
+                ideaElement.className = 'idea-item';
+                ideaElement.draggable = true;
+                ideaElement.dataset.ideaId = idea.id;
+                ideaElement.innerHTML = `
+                    <span class="idea-text">${escapeHtml(idea.content)}</span>
+                    <button class="idea-delete" onclick="deleteIdea('${idea.id}')" title="Delete">×</button>
+                `;
+                ideasList.appendChild(ideaElement);
+            });
+        }
+
+        function editTask(taskId) {
+            const task = tasks[taskId];
+            if (!task) return;
+            
+            const newContent = prompt('Edit task:', task.content);
+            if (newContent && newContent.trim()) {
+                task.content = newContent.trim();
+                task.updatedAt = new Date().toISOString();
+                saveToStorage();
+                renderAllTasks();
+            }
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                delete tasks[taskId];
+                selectedTasks.delete(taskId);
+                expandedTasks.delete(taskId); // Clean up expanded tasks tracking
+                saveToStorage();
+                renderAllTasks();
+                updateDashboard();
+            }
+        }
+
+        function archiveTask(taskId) {
+            tasks[taskId].archived = !tasks[taskId].archived;
+            tasks[taskId].updatedAt = new Date().toISOString();
+            expandedTasks.delete(taskId); // Collapse when archiving
+            saveToStorage();
+            renderAllTasks();
+            updateDashboard();
+        }
+
+        function toggleArchived() {
+            showArchived = !showArchived;
+            const button = event.target;
+            button.textContent = showArchived ? 'Show Active' : 'Show Archived';
+            renderAllTasks();
+        }
+
+        function toggleTaskSelection(taskId) {
+            if (selectedTasks.has(taskId)) {
+                selectedTasks.delete(taskId);
+            } else {
+                selectedTasks.add(taskId);
+            }
+            
+            const bulkActions = document.getElementById('bulk-actions');
+            if (selectedTasks.size > 0) {
+                bulkActions.classList.add('visible');
+            } else {
+                bulkActions.classList.remove('visible');
+            }
+            
+            renderAllTasks();
+        }
+
+        function clearSelection() {
+            selectedTasks.clear();
+            document.getElementById('bulk-actions').classList.remove('visible');
+            renderAllTasks();
+        }
+
+        function bulkDelete() {
+            if (confirm(`Delete ${selectedTasks.size} selected tasks?`)) {
+                selectedTasks.forEach(taskId => {
+                    delete tasks[taskId];
+                    expandedTasks.delete(taskId);
+                });
+                selectedTasks.clear();
+                document.getElementById('bulk-actions').classList.remove('visible');
+                saveToStorage();
+                renderAllTasks();
+                updateDashboard();
+            }
+        }
+
+        function bulkMove(column) {
+            selectedTasks.forEach(taskId => {
+                if (tasks[taskId]) {
+                    const oldColumn = tasks[taskId].column;
+                    tasks[taskId].column = column;
+                    tasks[taskId].updatedAt = new Date().toISOString();
+                    if (oldColumn !== column) {
+                        trackColumnChange(tasks[taskId], column);
+                    }
+                }
+            });
+            selectedTasks.clear();
+            document.getElementById('bulk-actions').classList.remove('visible');
+            saveToStorage();
+            renderAllTasks();
+            updateDashboard();
+        }
+
+        function bulkSetPriority(priority) {
+            selectedTasks.forEach(taskId => {
+                if (tasks[taskId]) {
+                    tasks[taskId].priority = priority;
+                    tasks[taskId].updatedAt = new Date().toISOString();
+                }
+            });
+            selectedTasks.clear();
+            document.getElementById('bulk-actions').classList.remove('visible');
+            saveToStorage();
+            renderAllTasks();
+        }
+
+        function bulkArchive() {
+            selectedTasks.forEach(taskId => {
+                if (tasks[taskId]) {
+                    tasks[taskId].archived = true;
+                    tasks[taskId].updatedAt = new Date().toISOString();
+                    expandedTasks.delete(taskId);
+                }
+            });
+            selectedTasks.clear();
+            document.getElementById('bulk-actions').classList.remove('visible');
+            saveToStorage();
+            renderAllTasks();
+            updateDashboard();
+        }
+
+        function updateTaskCounts() {
+            const counts = {};
+            
+            Object.values(tasks).forEach(task => {
+                if (!taskMatchesFilters(task)) return;
+                const key = `${task.category}-${task.column}`;
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            
+            document.querySelectorAll('.task-count').forEach(countElement => {
+                const column = countElement.dataset.column;
+                const category = countElement.dataset.category;
+                const key = `${category}-${column}`;
+                countElement.textContent = counts[key] || 0;
+            });
+        }
+
+        function updateTagFilter() {
+            const tagFilter = document.getElementById('tag-filter');
+            const allTags = new Set();
+            
+            Object.values(tasks).forEach(task => {
+                if (task.tags && task.category === currentCategory) {
+                    task.tags.forEach(tag => allTags.add(tag));
+                }
+            });
+            
+            const currentValue = tagFilter.value;
+            tagFilter.innerHTML = '<option value="">All Tags</option>';
+            
+            Array.from(allTags).sort().forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                if (tag === currentValue) option.selected = true;
+                tagFilter.appendChild(option);
+            });
+        }
+
+        function updateDashboard() {
+            const categoryTasks = Object.values(tasks).filter(t => 
+                t.category === currentCategory && !t.archived
+            );
+            
+            const totalTasks = categoryTasks.length;
+            const completedTasks = categoryTasks.filter(t => t.column === 'done').length;
+            const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            // Calculate average completion time
+            const completedWithTime = categoryTasks.filter(t => 
+                t.column === 'done' && t.columnHistory
+            );
+            
+            let avgTime = 0;
+            if (completedWithTime.length > 0) {
+                const totalDays = completedWithTime.reduce((sum, task) => {
+                    const created = new Date(task.createdAt);
+                    const completed = new Date(task.updatedAt);
+                    const days = Math.ceil((completed - created) / (1000 * 60 * 60 * 24));
+                    return sum + days;
+                }, 0);
+                avgTime = Math.round(totalDays / completedWithTime.length);
+            }
+            
+            document.getElementById('total-tasks').textContent = totalTasks;
+            document.getElementById('completed-tasks').textContent = completedTasks;
+            document.getElementById('completion-rate').textContent = `${completionRate}%`;
+            document.getElementById('avg-time').textContent = `${avgTime}d`;
+            document.getElementById('progress-fill').style.width = `${completionRate}%`;
+        }
+
+        function trackColumnChange(task, newColumn) {
+            if (!task.columnHistory) task.columnHistory = [];
+            task.columnHistory.push({
+                column: newColumn,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('idea-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addIdea();
+                }
+            });
+
+            document.addEventListener('dragstart', handleDragStart);
+            document.addEventListener('dragover', handleDragOver);
+            document.addEventListener('dragenter', handleDragEnter);
+            document.addEventListener('dragleave', handleDragLeave);
+            document.addEventListener('drop', handleDrop);
+            document.addEventListener('dragend', handleDragEnd);
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            if (e.target.classList.contains('task')) {
+                draggedElement = e.target;
+                draggedType = 'task';
+                e.target.classList.add('dragging');
+                
+                const column = e.target.dataset.column;
+                const category = e.target.dataset.category;
+                const columnTasks = document.querySelectorAll(`[data-column="${column}"][data-category="${category}"].task`);
+                sortMode = columnTasks.length > 1;
+            } else if (e.target.classList.contains('idea-item')) {
+                draggedElement = e.target;
+                draggedType = 'idea';
+                e.target.classList.add('dragging');
+                sortMode = false;
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            const dropZone = e.target.closest('.drop-zone');
+            const task = e.target.closest('.task');
+            
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+            
+            if (task && sortMode && task !== draggedElement && draggedType === 'task') {
+                const draggedColumn = draggedElement.dataset.column;
+                const draggedCategory = draggedElement.dataset.category;
+                const targetColumn = task.dataset.column;
+                const targetCategory = task.dataset.category;
+                
+                if (draggedColumn === targetColumn && draggedCategory === targetCategory) {
+                    document.querySelectorAll('.sort-target').forEach(el => {
+                        el.classList.remove('sort-target');
+                    });
+                    
+                    task.classList.add('sort-target');
+                    draggedOverElement = task;
+                }
+            }
+        }
+
+        function handleDragLeave(e) {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone && !dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('drag-over');
+            }
+            
+            const task = e.target.closest('.task');
+            if (task) {
+                task.classList.remove('sort-target');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            if (!draggedElement) return;
+            
+            const dropZone = e.target.closest('.drop-zone');
+            const targetTask = e.target.closest('.task');
+            
+            if (dropZone) {
+                if (draggedType === 'task') {
+                    const taskId = draggedElement.dataset.taskId;
+                    const newColumn = dropZone.dataset.column;
+                    const newCategory = dropZone.dataset.category;
+                    
+                    if (tasks[taskId]) {
+                        if (targetTask && sortMode && 
+                            draggedElement.dataset.column === newColumn && 
+                            draggedElement.dataset.category === newCategory) {
+                            
+                            reorderTasks(taskId, targetTask.dataset.taskId, newColumn, newCategory);
+                        } else {
+                            const oldColumn = tasks[taskId].column;
+                            tasks[taskId].column = newColumn;
+                            tasks[taskId].category = newCategory;
+                            tasks[taskId].order = getNextOrderInColumn(newColumn, newCategory);
+                            tasks[taskId].updatedAt = new Date().toISOString();
+                            
+                            if (oldColumn !== newColumn) {
+                                trackColumnChange(tasks[taskId], newColumn);
+                            }
+                        }
+                        
+                        saveToStorage();
+                        renderAllTasks();
+                        updateDashboard();
+                    }
+                } else if (draggedType === 'idea') {
+                    const ideaId = draggedElement.dataset.ideaId;
+                    const idea = ideas[ideaId];
+                    const newColumn = dropZone.dataset.column;
+                    const newCategory = dropZone.dataset.category;
+                    
+                    if (idea) {
+                        const taskId = `task-${taskIdCounter++}`;
+                        const task = {
+                            id: taskId,
+                            content: idea.content,
+                            column: newColumn,
+                            category: newCategory,
+                            priority: 'medium',
+                            order: getNextOrderInColumn(newColumn, newCategory),
+                            subtasks: [],
+                            comments: [],
+                            tags: [],
+                            dependencies: [],
+                            columnHistory: [],
+                            archived: false,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        
+                        trackColumnChange(task, newColumn);
+                        tasks[taskId] = task;
+                        delete ideas[ideaId];
+                        
+                        saveToStorage();
+                        renderAllTasks();
+                        renderIdeas();
+                        updateDashboard();
+                    }
+                }
+            }
+            
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('drag-over');
+            });
+            document.querySelectorAll('.sort-target').forEach(el => {
+                el.classList.remove('sort-target');
+            });
+        }
+
+        function handleDragEnd(e) {
+            if (e.target.classList.contains('task') || e.target.classList.contains('idea-item')) {
+                e.target.classList.remove('dragging');
+            }
+            
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('drag-over');
+            });
+            document.querySelectorAll('.sort-target').forEach(el => {
+                el.classList.remove('sort-target');
+            });
+            
+            draggedElement = null;
+            draggedOverElement = null;
+            draggedType = null;
+            sortMode = false;
+        }
+
+        function reorderTasks(draggedTaskId, targetTaskId, column, category) {
+            const columnTasks = Object.values(tasks)
+                .filter(t => t.column === column && t.category === category && taskMatchesFilters(t))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            const draggedTask = tasks[draggedTaskId];
+            const targetIndex = columnTasks.findIndex(t => t.id === targetTaskId);
+            
+            const filteredTasks = columnTasks.filter(t => t.id !== draggedTaskId);
+            filteredTasks.splice(targetIndex, 0, draggedTask);
+            
+            filteredTasks.forEach((task, index) => {
+                tasks[task.id].order = index;
+                tasks[task.id].updatedAt = new Date().toISOString();
+            });
+            
+            saveToStorage();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
+            localStorage.setItem(STORAGE_KEYS.ideas, JSON.stringify(ideas));
+            localStorage.setItem(STORAGE_KEYS.columns, JSON.stringify(columns));
+            localStorage.setItem(STORAGE_KEYS.taskCounter, taskIdCounter.toString());
+            localStorage.setItem(STORAGE_KEYS.ideaCounter, ideaIdCounter.toString());
+        }
+
+        function exportTasks() {
+            const dataStr = JSON.stringify({
+                tasks: tasks,
+                ideas: ideas,
+                columns: columns,
+                taskIdCounter: taskIdCounter,
+                ideaIdCounter: ideaIdCounter,
+                exportDate: new Date().toISOString(),
+                currentCategory: currentCategory
+            }, null, 2);
+            
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${STORAGE_KEYS.tasks}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importTasks(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.tasks) {
+                        if (confirm('This will replace all current data. Are you sure?')) {
+                            tasks = data.tasks;
+                            ideas = data.ideas || {};
+                            columns = data.columns || {
+                                personal: ['on-the-table', 'in-progress', 'waiting', 'done'],
+                                work: ['on-the-table', 'in-progress', 'waiting', 'done']
+                            };
+                            taskIdCounter = data.taskIdCounter || Object.keys(tasks).length + 1;
+                            ideaIdCounter = data.ideaIdCounter || Object.keys(ideas).length + 1;
+                            expandedTasks.clear(); // Reset expanded tasks on import
+                            
+                            if (data.currentCategory) {
+                                switchCategoryProgrammatically(data.currentCategory);
+                            }
+                            
+                            saveToStorage();
+                            renderColumns();
+                            renderAllTasks();
+                            renderIdeas();
+                            updateDashboard();
+                            updateTagFilter();
+                            alert('Data imported successfully!');
+                        }
+                    }
+                } catch (error) {
+                    alert('Error importing data. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+            
+            event.target.value = '';
+        }
+
+        function switchCategoryProgrammatically(category) {
+            if (currentCategory === category) return;
+            
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase() === category) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            const currentBoard = document.querySelector('.board.active');
+            if (currentBoard) {
+                currentBoard.classList.remove('active');
+            }
+            
+            setTimeout(() => {
+                document.getElementById(`${category}-board`).classList.add('active');
+                renderIdeas();
+                updateDashboard();
+                updateTagFilter();
+            }, 200);
+        }
+
+        function clearAllTasks() {
+            if (confirm('Are you sure you want to delete all tasks and ideas? This cannot be undone.')) {
+                tasks = {};
+                ideas = {};
+                taskIdCounter = 1;
+                ideaIdCounter = 1;
+                selectedTasks.clear();
+                expandedTasks.clear();
+                document.getElementById('bulk-actions').classList.remove('visible');
+                saveToStorage();
+                renderColumns();
+                renderAllTasks();
+                renderIdeas();
+                updateDashboard();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

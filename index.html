@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+    <div class="header">
+        <h1>Task Manager</h1>
+        <p>Advanced task management with productivity insights</p>
+        <button class="theme-toggle" onclick="toggleTheme()">Light Mode</button>
+    </div>
+
+    <div class="progress-dashboard" id="dashboard">
+        <div class="progress-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-tasks">0</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completed-tasks">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completion-rate">0%</div>
+                <div class="stat-label">Completion Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-time">0d</div>
+                <div class="stat-label">Avg. Completion Time</div>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="exportTasks()">Export Tasks</button>
+        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importTasks(event)">
+        <button onclick="document.getElementById('importFile').click()">Import Tasks</button>
+        <button onclick="clearAllTasks()">Clear All</button>
+        <button onclick="toggleArchived()">Show Archived</button>
+        <button onclick="addCustomColumn()">Add Column</button>
+    </div>
+
+    <div class="category-selector">
+        <button class="category-btn active" onclick="switchCategory('personal')">Personal</button>
+        <button class="category-btn" onclick="switchCategory('work')">Work</button>
+    </div>
+
+    <div class="search-filter-bar">
+        <input type="text" class="search-input" placeholder="Search tasks..." id="search-input" oninput="filterTasks()">
+        <select class="filter-select" id="priority-filter" onchange="filterTasks()">
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+        </select>
+        <select class="filter-select" id="tag-filter" onchange="filterTasks()">
+            <option value="">All Tags</option>
+        </select>
+    </div>
+
+    <div class="board-container">
+        <!-- Personal Board -->
+        <div class="board active" id="personal-board" data-category="personal">
+            <!-- Dynamic columns will be inserted here -->
+        </div>
+
+        <!-- Work Board -->
+        <div class="board" id="work-board" data-category="work">
+            <!-- Dynamic columns will be inserted here -->
+        </div>
+
+        <!-- Ideas Bar -->
+        <div class="ideas-bar">
+            <div class="ideas-header">
+                <h3 class="ideas-title">Ideas Backlog</h3>
+                <span class="ideas-count" id="ideas-count">0</span>
+            </div>
+            <div class="add-idea-form">
+                <input type="text" class="add-idea-input" placeholder="Jot down a quick idea..." id="idea-input">
+                <button class="add-idea-btn" onclick="addIdea()">Add Idea</button>
+            </div>
+            <div class="ideas-list" id="ideas-list"></div>
+        </div>
+    </div>
+
+    <div class="bulk-actions" id="bulk-actions">
+        <button onclick="bulkDelete()">Delete Selected</button>
+        <button onclick="bulkMove('done')">Move to Done</button>
+        <button onclick="bulkSetPriority('high')">Set High Priority</button>
+        <button onclick="bulkArchive()">Archive Selected</button>
+        <button onclick="clearSelection()">Clear Selection</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
